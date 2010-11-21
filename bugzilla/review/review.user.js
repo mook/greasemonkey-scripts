@@ -43,7 +43,9 @@ function startReview() {
 function onDiffLoad(event) {
   var reviewFrame = document.getElementById("reviewFrame");
   var doc = event.target.contentDocument;
-  alert(doc.body.innerHTML);
+
+  
+
   reviewFrame.scrollIntoView();
 }
 
