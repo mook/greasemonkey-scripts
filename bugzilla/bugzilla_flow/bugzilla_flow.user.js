@@ -20,6 +20,9 @@ const HTML_NS = 'http://www.w3.org/1999/xhtml';
 
 var gSteps = [];
 
+// Firefox 3.6 doesn't allow assignment to window.location; fake it out here
+var location = { __proto__ : window.location };
+
 gSteps.push(function InlineActivity() {
   // style things
   GM_addStyle(""+<><![CDATA[
