@@ -1,0 +1,14 @@
+/* un-table everything :D */
+:root[reviewing] .attachment_info,
+:root[reviewing] .attachment_info > tbody,
+:root[reviewing] .attachment_info > tbody > tr,
+:root[reviewing] .attachment_info > tbody > tr > td {
+  display: block;
+  width: 100%;
+}
+
+:root:not([reviewing]) #reviewFrame,
+:root[reviewing] .attachment_info > tbody > tr > td:last-of-type {
+  /* display: none; */
+  display: block !important;
+}
