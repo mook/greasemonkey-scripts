@@ -4,6 +4,7 @@
 // @description    Review editor for bugzilla
 // @include        */attachment.cgi?id=*&action=edit
 // @require        String.js
+// @require        NodeList.js
 // @resource       REVIEW_CSS Review.css
 // ==/UserScript==
 // vim: set sw=2 syntax=javascript : */
@@ -41,10 +42,18 @@ function startReview() {
  * out the sections
  */
 function onDiffLoad(event) {
+  event.target.removeEventListener(event.type, arguments.callee, false);
   var reviewFrame = document.getElementById("reviewFrame");
   var doc = event.target.contentDocument;
 
-  
+  for each (let table in doc.querySelectorAll(".file_table")) {
+    table = document.importNode(table, true);
+    reviewFrame.appendChild(table);
+    // remove all the links
+    for each (let link in table.querySelectorAll("a[href]")) {
+      link.parentNode.removeChild(link);
+    }
+  }
 
   reviewFrame.scrollIntoView();
 }

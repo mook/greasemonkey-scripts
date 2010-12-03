@@ -12,3 +12,28 @@
   /* display: none; */
   display: block !important;
 }
+
+#reviewFrame .file_table {
+  width: 100%;
+}
+
+#reviewFrame pre {
+  margin: 0;
+}
+
+#reviewFrame pre:empty {
+  min-height: 1.2em;
+}
+
+
+#reviewFrame .added pre {
+  background: rgba(192, 255, 192, 0.75);
+}
+
+#reviewFrame .removed pre {
+  background: rgba(255, 192, 192, 0.75);
+}
+
+#reviewFrame .changed pre {
+  background: rgba(192, 192, 255, 0.75);
+}
