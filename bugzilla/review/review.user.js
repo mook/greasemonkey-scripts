@@ -18,6 +18,18 @@ const HTML_NS = "http://www.w3.org/1999/xhtml";
 var location = { __proto__ : window.location };
 
 /**
+ * Log debugging messages
+ */
+function LOG() {
+  if ("console" in window && "log" in window.console) {
+    window.console.log.apply(window.console, [].slice.call(arguments));
+  }
+  else {
+    GM_log.apply(this, [].slice.call(arguments));
+  }
+}
+
+/**
  * Function to start the review, triggered by the user-visible button
  */
 function startReview() {
@@ -52,9 +64,18 @@ function onDiffLoad(event) {
   for each (let table in doc.querySelectorAll(".file_table")) {
     table = document.importNode(table, true);
     reviewFrame.appendChild(table);
+    let filename = table.querySelector(".file_head input").getAttribute("name");
+    table.setAttribute("filename", encodeURIComponent(filename));
+    table.addEventListener("dblclick", onDiffDoubleClick, false);
     // remove all the links
     for each (let link in table.querySelectorAll("a[href]")) {
       link.parentNode.removeChild(link);
+    }
+
+    // add line numbers
+    let lines = table.querySelectorAll("pre");
+    for (let index = 0; index < lines.length; ++index) {
+      lines[index].setAttribute("line_number", index);
     }
   }
 
@@ -62,10 +83,111 @@ function onDiffLoad(event) {
 }
 
 /**
- * Restore previously saved comments
+ * Restore all previously saved comments
  */
 function restoreComments() {
+  var reviewFrame = document.getElementById("reviewFrame");
+  for (var i = 0; i < localStorage.length; ++i) {
+    var key = localStorage.key(i);
+    var match = /^review-(\d+)-file-(.*)-line-(\d+)/.exec(key);
+    if (match && match[1] == location.attachmentid) {
+      var table = reviewFrame.querySelector('.file_table[filename="' + match[2] + '"]');
+      if (table) {
+        updateComment(table, match[3]);
+      }
+    }
+  }
   reviewFrame.scrollIntoView();
+}
+
+/**
+ * update the comment display for a given line
+ * @param aTable the file table to affect
+ * @param aLineNumber the line number
+ */
+function updateComment(aTable, aLineNumber) {
+  var key = "review-" + location.attachmentid +
+            "-file-" + aTable.getAttribute("filename") +
+            "-line-" + aLineNumber;
+  var comment = localStorage.getItem(key);
+  var preSelector = "pre[line_number='" + aLineNumber + "']";
+  LOG(preSelector);
+  var display = aTable.querySelector(preSelector + " + span.comment");
+  if (comment) {
+    if (!display) {
+      display = document.createElementNS(HTML_NS, "span");
+      display.classList.add("comment");
+      let line = aTable.querySelector(preSelector);
+      line.parentNode.insertBefore(display, line.nextSibling);
+    }
+    display.textContent = comment;
+  }
+  else {
+    if (display) {
+      display.parentNode.removeChild(display);
+    }
+  }
+}
+
+/**
+ * Handler for double clicking on the diff
+ */
+function onDiffDoubleClick(event) {
+  var target = event.target;
+  if (target instanceof HTMLPreElement) {
+    var editor = document.getElementById("reviewEditor");
+    if (editor) {
+      editor.blur();
+    }
+
+    var table = target;
+    while (!table.classList.contains("file_table")) {
+      table = table.parentNode;
+    }
+    var filename = table.getAttribute("filename");
+    var key = "review-" + location.attachmentid +
+              "-file-" + table.getAttribute("filename") +
+              "-line-" + target.getAttribute("line_number");
+
+    editor = document.createElementNS(HTML_NS, "textarea");
+    editor.id = "reviewEditor";
+    editor.setAttribute("line_number", target.getAttribute("line_number"));
+    editor.value = localStorage.getItem(key) || "";
+    target.parentNode.insertBefore(editor, target.nextSibling);
+    editor.addEventListener("blur", onEditorBlur, false);
+
+    editor.focus();
+  }
+}
+
+/**
+ * Handler for releasing the editor
+ */
+function onEditorBlur(event) {
+  var editor = document.getElementById("reviewEditor");
+  if (!editor) return;
+  var lineNumber = editor.getAttribute("line_number");
+
+  var table = editor;
+  while (!table.classList.contains("file_table")) {
+    table = table.parentNode;
+  }
+  var filename = table.getAttribute("filename");
+
+  LOG("save: " + filename + "@" + lineNumber + " <-- " + editor.value);
+  
+  var key = "review-" + location.attachmentid +
+            "-file-" + filename +
+            "-line-" + lineNumber;
+  if (editor.value.length > 0) {
+    localStorage.setItem(key, editor.value);
+  }
+  else {
+    localStorage.removeItem(key);
+  }
+
+  editor.parentNode.removeChild(editor);
+  updateComment(table, lineNumber);
 }
 
 /**

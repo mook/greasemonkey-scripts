@@ -24,16 +24,25 @@
   background: rgba(0, 0, 0, 0.1);
 }
 
-#reviewFrame .file_table > tbody > tr:hover {
+#reviewFrame .file_table > tbody.file .section_head > table {
+  width: 100%;
+}
+
+#reviewFrame .file_table > tbody.file > tr:hover {
   outline: 1px solid rgba(0, 0, 0, 0.25);
 }
 
-#reviewFrame .file_table > tbody > tr > td {
+#reviewFrame .file_table > tbody.file > tr > td {
   padding: 1px 2px;
 }
 
 #reviewFrame pre {
   margin: 0;
+}
+
+#reviewFrame pre::before {
+  color: rgba(255, 0, 255, 0.5);
+  content: attr(line_number);
 }
 
 #reviewFrame pre:empty {
@@ -51,4 +60,13 @@
 
 #reviewFrame .changed pre {
   background: rgba(192, 192, 255, 0.75);
+}
+
+#reviewFrame #reviewEditor {
+  width: 100%;
+  height: 20em;
+}
+
+#reviewFrame .comment {
+  font-family: monospace;
 }
