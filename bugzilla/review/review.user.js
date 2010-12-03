@@ -23,9 +23,9 @@ var location = { __proto__ : window.location };
 function startReview() {
   document.documentElement.setAttribute("reviewing", true);
   var diffFrame = document.getElementById("viewDiffFrame");
+  diffFrame.addEventListener("load", onDiffLoad, false);
   diffFrame.src = "attachment.cgi?id=" + location.attachmentid +
                   "&action=diff&headers=0";
-  diffFrame.addEventListener("load", onDiffLoad, false);
 
   var reviewFrame = document.getElementById("reviewFrame");
   if (reviewFrame) {

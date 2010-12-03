@@ -15,6 +15,21 @@
 
 #reviewFrame .file_table {
   width: 100%;
+  border-spacing: 0;
+}
+
+#reviewFrame .file_table > thead > tr {
+  /* file name */
+  outline: 1px solid black;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+#reviewFrame .file_table > tbody > tr:hover {
+  outline: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+#reviewFrame .file_table > tbody > tr > td {
+  padding: 1px 2px;
 }
 
 #reviewFrame pre {
