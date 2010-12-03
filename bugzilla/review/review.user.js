@@ -22,15 +22,18 @@ var location = { __proto__ : window.location };
  */
 function startReview() {
   document.documentElement.setAttribute("reviewing", true);
+
+  var reviewFrame = document.getElementById("reviewFrame");
+  if (reviewFrame) {
+    restoreComments();
+    return;
+  }
+
   var diffFrame = document.getElementById("viewDiffFrame");
   diffFrame.addEventListener("load", onDiffLoad, false);
   diffFrame.src = "attachment.cgi?id=" + location.attachmentid +
                   "&action=diff&headers=0";
 
-  var reviewFrame = document.getElementById("reviewFrame");
-  if (reviewFrame) {
-    return;
-  }
   reviewFrame = document.createElementNS(HTML_NS, "section");
   document.querySelector(".attachment_info").appendChild(reviewFrame);
   reviewFrame.id = "reviewFrame";
@@ -55,6 +58,13 @@ function onDiffLoad(event) {
     }
   }
 
+  restoreComments();
+}
+
+/**
+ * Restore previously saved comments
+ */
+function restoreComments() {
   reviewFrame.scrollIntoView();
 }
 
