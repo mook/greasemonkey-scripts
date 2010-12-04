@@ -13,6 +13,11 @@
   display: block !important;
 }
 
+:root:not([reviewing]) #doneReviewButton,
+:root[reviewing] #startReviewButton {
+  display: none;
+}
+
 #reviewFrame .file_table {
   width: 100%;
   border-spacing: 0;
@@ -37,12 +42,11 @@
 }
 
 #reviewFrame pre {
-  margin: 0;
-}
-
-#reviewFrame pre::before {
-  color: rgba(255, 0, 255, 0.5);
-  content: attr(line_number);
+  background: rgba(224, 224, 224, 0.75);
+  margin: 0 0 0 1ch;
+  padding-left: 1.5ch;
+  text-indent: -1ch;
+  white-space: pre-wrap;
 }
 
 #reviewFrame pre:empty {
@@ -68,5 +72,7 @@
 }
 
 #reviewFrame .comment {
+  display: inline-block;
   font-family: monospace;
+  white-space: pre-wrap;
 }

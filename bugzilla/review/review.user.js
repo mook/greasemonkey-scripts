@@ -33,6 +33,7 @@ function LOG() {
  * Function to start the review, triggered by the user-visible button
  */
 function startReview() {
+  setTimeout(function(){location.href="javascript:editAsComment()"}, 0);
   document.documentElement.setAttribute("reviewing", true);
 
   var reviewFrame = document.getElementById("reviewFrame");
@@ -50,6 +51,71 @@ function startReview() {
   document.querySelector(".attachment_info").appendChild(reviewFrame);
   reviewFrame.id = "reviewFrame";
   reviewFrame.classList.add("review");
+}
+
+/**
+ * Function to end the review, writing out the text and hiding the review UI
+ */
+function doneReview() {
+  var editFrame = document.getElementById("editFrame");
+  var reviewFrame = document.getElementById("reviewFrame");
+
+  var text = ["(from review of attachment " + location.attachmentid + ")"];
+  for each (let table in reviewFrame.querySelectorAll(".file_table")) {
+    text.push("Index: " + decodeURIComponent(table.getAttribute("filename")));
+    text.push((new Array(81)).join("="));
+    for each (let row in table.querySelectorAll(".file > tr")) {
+      if (row.querySelector(".section_head")) {
+        // this is a diff hunk marker
+        let lineStr = row.querySelector("th:first-of-type").textContent;
+        lineStr = lineStr.split(/\n/)
+                         .filter(function(s)/^\s*Line/(s))[0]
+                         .trim();
+        text.push("@" + lineStr + "@");
+        continue;
+      }
+      function getKey(aPre) {
+        return "review-" + location.attachmentid +
+               "-file-" + table.getAttribute("filename") +
+               "-line-" + aPre.getAttribute("line_number");
+      }
+      function doComment(aPre) {
+        var comment = localStorage.getItem(getKey(aPre));
+        if (comment !== null) {
+          text.push(comment);
+        }
+      }
+      if (row.classList.contains("changed")) {
+        let pre = row.querySelector("td:first-of-type pre");
+        text.push("> -" + pre.textContent);
+        doComment(pre);
+
+        pre = row.querySelector("td:last-of-type pre");
+        text.push("> +" + pre.textContent);
+        doComment(pre);
+      }
+      else if (row.querySelector(".added")) {
+        let pre = row.querySelector(".added pre");
+        text.push("> +" + pre.textContent);
+        doComment(pre);
+      }
+      else if (row.querySelector(".removed")) {
+        let pre = row.querySelector(".removed pre");
+        text.push("> -" + pre.textContent);
+        doComment(pre);
+      }
+      else {
+        /* no change */
+        text.push(">  " + row.querySelector("pre").textContent);
+        for each (let pre in row.querySelectorAll("pre")) {
+          doComment(pre);
+        }
+      }
+      
+    }
+  }
+
+  editFrame.value = text.concat("").join("\n");
 }
 
 /**
@@ -232,9 +298,18 @@ function onEditorBlur(event) {
   let startReviewButton = document.createElementNS(HTML_NS, "button");
   startReviewButton.textContent = "Review Patch";
   startReviewButton.setAttribute("onclick", "return false;");
+  startReviewButton.id = "startReviewButton";
   
   viewRawButton.parentNode.appendChild(startReviewButton);
   startReviewButton.addEventListener("click", startReview, false);
+  
+  let doneReviewButton = document.createElementNS(HTML_NS, "button");
+  doneReviewButton.textContent = "Review Complete";
+  doneReviewButton.setAttribute("onclick", "return false;");
+  viewRawButton.parentNode.appendChild(doneReviewButton);
+  doneReviewButton.addEventListener("click", doneReview, false);
+  doneReviewButton.id = "doneReviewButton";
+  
 }
 
 })();
