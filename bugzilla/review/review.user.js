@@ -5,6 +5,7 @@
 // @include        */attachment.cgi?id=*&action=edit
 // @require        String.js
 // @require        NodeList.js
+// @require        PatchReader.js
 // @resource       REVIEW_CSS Review.css
 // ==/UserScript==
 // vim: set sw=2 syntax=javascript : */
@@ -68,10 +69,14 @@ function doneReview() {
 
   var text = ["(from review of attachment " + location.attachmentid + ")"];
   for each (let table in (reviewFrame.querySelectorAll(".file_table"))) {
+    if (!table.querySelector(".hunk[comment_count]")) {
+      // no comments for this file, skip
+      continue;
+    }
     for (let [, line] in Iterator(table.file.header)) {
       text.push(">" + line);
     }
-    for each (let hunk in table.querySelectorAll(".hunk")) {
+    for each (let hunk in table.querySelectorAll(".hunk[comment_count]")) {
       text.push(">@@ " + hunk.querySelector(".section_head").textContent + " @@");
       for (let run = 0; true; ++run) {
         let selector = "tr[run='" + run + "']";
@@ -117,63 +122,6 @@ function doneReview() {
         }
       }
     }
-
-    continue;
-    for each (let row in table.querySelectorAll(".hunk > tr")) {
-      /*
-      if (row.querySelector(".section_head")) {
-        // this is a diff hunk marker
-        let lineStr = row.querySelector("th:first-of-type").textContent;
-        lineStr = lineStr.split(/\n/)
-                         .filter(function(s)/^\s*Line/(s))[0]
-                         .trim();
-        text.push("@" + lineStr + "@");
-        continue;
-      }
-      */
-      function getKey(aPre) {
-        return "review-" + location.attachmentid +
-               "-file-" + table.getAttribute("filename") +
-               "-line-" + aPre.getAttribute("line_number");
-      }
-      function doComment(aPre) {
-        var comment = localStorage.getItem(getKey(aPre));
-        if (comment !== null) {
-          text.push(comment);
-        }
-      }
-      if (row.classList.contains("changed")) {
-        let pre = row.querySelector(".left span");
-        if (pre) {
-          text.push("> -" + pre.textContent);
-          doComment(pre);
-        }
-
-        pre = row.querySelector(".right span");
-        if (pre) {
-          text.push("> +" + pre.textContent);
-          doComment(pre);
-        }
-      }
-      else if (row.classList.contains("added")) {
-        let pre = row.querySelector(".right span");
-        text.push("> +" + pre.textContent);
-        doComment(pre);
-      }
-      else if (row.classList.contains("removed")) {
-        let pre = row.querySelector(".left span");
-        text.push("> -" + pre.textContent);
-        doComment(pre);
-      }
-      else {
-        /* no change */
-        text.push(">  " + row.querySelector(".left .line").textContent);
-        for each (let pre in row.querySelectorAll("pre")) {
-          doComment(pre);
-        }
-      }
-      
-    }
   }
 
   editFrame.value = text.concat("").join("\n");
@@ -197,7 +145,8 @@ function loadDiff(aDiffContents) {
     table.classList.add("file_table");
     table.file = file;
     table.addEventListener("dblclick", onDiffDoubleClick, false);
-    table.setAttribute("filename", encodeURIComponent(file.src || file.dest));
+    table.setAttribute("filename",
+                       encodeURIComponent(file.src || file.dest).replace(/-/g, "%30"));
 
     { /** file header (check box to hide file and file name) */
       let thead = document.createElementNS(HTML_NS, "thead");
@@ -221,7 +170,6 @@ function loadDiff(aDiffContents) {
       label.insertBefore(checkbox, label.firstChild);
     }
 
-    
     for (let [, hunk] in Iterator(file.hunks)) { /** each hunk in file */
       let tbody = document.createElementNS(HTML_NS, "tbody");
       table.appendChild(tbody);
@@ -323,18 +271,32 @@ function updateComment(aSpan) {
   var match = /-line-(\d+)-([a-z]+)$/(key);
   var comment = localStorage.getItem(key);
   var display = aSpan.parentNode.querySelector(".comment");
+  var hunk = aSpan.parentNode;
+  while (!hunk.classList.contains("hunk")) {
+    hunk = hunk.parentNode;
+  }
+  var commentCount = parseInt(hunk.getAttribute("comment_count") || 0, 10);
+
   if (comment) {
     if (!display) {
       display = document.createElementNS(HTML_NS, "span");
       display.classList.add("comment");
       aSpan.parentNode.insertBefore(display, aSpan.nextSibling);
+      ++commentCount;
     }
     display.textContent = comment;
   }
   else {
     if (display) {
       display.parentNode.removeChild(display);
+      --commentCount;
     }
+  }
+  if (commentCount > 0) {
+    hunk.setAttribute("comment_count", commentCount);
+  }
+  else {
+    hunk.removeAttribute("comment_count");
   }
 }
 
