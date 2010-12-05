@@ -21,49 +21,67 @@
 #reviewFrame .file_table {
   width: 100%;
   border-spacing: 0;
+  table-layout: fixed;
 }
 
-#reviewFrame .file_table > thead > tr {
+#reviewFrame .file_table .file_head th {
   /* file name */
   outline: 1px solid black;
   background: rgba(0, 0, 0, 0.1);
+  text-align: left;
 }
 
-#reviewFrame .file_table > tbody.file .section_head > table {
+#reviewFrame .file_table .file_head th label {
+  display: block;
+}
+
+#reviewFrame .file_table .file_head:not(.visible) ~ .hunk {
+  display: none;
+}
+
+#reviewFrame .file_table > tbody.hunk .section_head > table {
   width: 100%;
 }
 
-#reviewFrame .file_table > tbody.file > tr:hover {
+#reviewFrame .file_table > tbody.hunk > tr:hover {
   outline: 1px solid rgba(0, 0, 0, 0.25);
 }
 
-#reviewFrame .file_table > tbody.file > tr > td {
-  padding: 1px 2px;
+#reviewFrame .file_table > .hunk {
+  border-spacing: 1px 2px;
 }
 
-#reviewFrame pre {
-  background: rgba(224, 224, 224, 0.75);
+#reviewFrame .file_table > .hunk .section_head th {
+  font-weight: normal;
+  font-size: 0.8em;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+#reviewFrame .file_table > .hunk td > span {
+  font-family: monospace;
+  display: block; /* force width */
   margin: 0 0 0 1ch;
   padding-left: 1.5ch;
   text-indent: -1ch;
   white-space: pre-wrap;
+  min-height: 1.2em; /* for empty lines */
 }
 
-#reviewFrame pre:empty {
-  min-height: 1.2em;
-}
-
-
-#reviewFrame .added pre {
+#reviewFrame .file_table > .hunk .added .right > .line {
   background: rgba(192, 255, 192, 0.75);
 }
 
-#reviewFrame .removed pre {
+#reviewFrame .file_table > .hunk .removed .left > .line {
   background: rgba(255, 192, 192, 0.75);
 }
 
-#reviewFrame .changed pre {
+#reviewFrame .file_table > .hunk .changed td > .line {
   background: rgba(192, 192, 255, 0.75);
+}
+
+#reviewFrame .file_table > .hunk .context td > .line {
+  background: rgba(224, 224, 224, 0.75);
 }
 
 #reviewFrame #reviewEditor {

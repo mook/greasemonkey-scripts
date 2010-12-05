@@ -11,7 +11,7 @@
  *   src: name of the old file
  *   dest: name of the new file
  *   hunks: array of changes
- *    range: the lines involved, @@ -start,length +start,length @@
+ *    range: the lines involved, "@@ -start,length +start,length @@"
  *    runs: array of lines:
  *      type: "added", "removed", "changed", "context"
  *      left: (removed/changed/context) old lines (array of string)
@@ -20,7 +20,6 @@
  */
 
 function PatchReader(aPatchContents) {
-  var ticks = 300;
   var result = {
     prologue: [],
     files: [],
@@ -29,11 +28,10 @@ function PatchReader(aPatchContents) {
 
   var lines = aPatchContents.split(/\r?\n/);
   const RE_START_FILE = /^(?:Index:|(?:\w+ )?diff |\-\-\-|\+\+\+)/;
-  const RE_START_HUNK = /^@@ -\d+,\d+ \+\d+,\d+ @@$/;
+  const RE_START_HUNK = /^@@ -\d+,\d+ \+\d+,\d+ @@/;
   
   // prologue
   while (lines.length > 0) {
-    if (--ticks < 0) throw "Execution took too long";
     let line = lines[0];
     if (RE_START_FILE(line)) {
       // starting a file
@@ -44,28 +42,24 @@ function PatchReader(aPatchContents) {
 
   // body
   while (lines.length > 0) {
-    if (--ticks < 0) throw "Execution took too long";
     let line = lines[0];
-    LOG("[" + line + "]");
     if (RE_START_FILE(line)) {
       // start of a file
       var file = {header: result.epilogue,
                   hunks: []};
       while (!RE_START_HUNK(line)) {
-        file.header.push(line);
         if (/^\-\-\-/(line)) {
           file.src = FileName(line);
         }
         else if (/^\+\+\+/(line)) {
           file.dest = FileName(line);
         }
-        lines.shift();
+        file.header.push(lines.shift());
         line = lines[0];
       }
 
-
+      // process the hunks
       while (RE_START_HUNK(line)) {
-        if (--ticks < 0) throw "Execution took too long";
         var hunk = parseHunk(lines);
         if (!hunk) break;
         file.hunks.push(hunk);
@@ -87,6 +81,11 @@ function PatchReader(aPatchContents) {
 
 /**
  * Convert a file name (--- or +++ line) to a nice object
+ * Properties:
+ *   file: the name of the file
+ *   type: "added" or "removed"
+ *   date: the date of the file, if available
+ *   revision: the file revision, if available
  */
 function FileName(aLine) {
   var result = {line: aLine}, match;
@@ -131,7 +130,7 @@ function parseHunk(aLines) {
   var result = {runs: []};
   { /** build result.range **/
     result.range = new String(aLines.shift());
-    var match = /^@@ -(\d+),(\d+) \+(\d+),(\d+) @@$/(result.range);
+    var match = /^@@ -(\d+),(\d+) \+(\d+),(\d+) @@/(result.range);
     if (!match) {
       // should never have gotten here... oops!
       aLines.unshift(result.range);
@@ -143,20 +142,24 @@ function parseHunk(aLines) {
     result.range.rightCount = parseInt(match[4], 10);
   }
   var leftCount = result.range.leftCount, rightCount = result.range.rightCount;
+  var leftNum = result.range.leftStart, rightNum = result.range.rightStart;
   while ((leftCount > 0 || rightCount > 0) && aLines.length > 0) {
     let run = {left: [], right: [], type: null};
-    LOG("line [" + aLines[0] + "] <" + leftCount + " >" + rightCount);
     switch(aLines[0][0]) {
       case "-": { /* removed or changed */
         run.type = "removed";
         while (aLines[0][0] == "-" && leftCount > 0) {
-          run.left.push(aLines.shift());
+          let str = new String(aLines.shift());
+          str.lineno = leftNum++;
+          run.left.push(str);
           --leftCount;
         }
         if (aLines[0][0] == "+" && rightCount > 0) {
           run.type = "changed";
           while (aLines[0][0] == "+" && rightCount > 0) {
-            run.right.push(aLines.shift());
+            let str = new String(aLines.shift());
+            str.lineno = rightNum++;
+            run.right.push(str);
             --rightCount;
           }
         }
@@ -165,7 +168,9 @@ function parseHunk(aLines) {
       case "+": { /* added */
         run.type = "added";
         while (aLines[0][0] == "+" && rightCount > 0) {
-          run.right.push(aLines.shift());
+          let str = new String(aLines.shift());
+          str.lineno = rightNum++;
+          run.right.push(str);
           --rightCount;
         }
         break;
@@ -173,18 +178,22 @@ function parseHunk(aLines) {
       case " ": { /* context */
         run.type = "context";
         while (aLines[0][0] == " " && leftCount > 0 && rightCount > 0) {
-          run.left.push(aLines.shift());
+          let line = aLines.shift();
+          let str = new String(line);
+          str.lineno = leftNum++;
+          run.left.push(str);
           --leftCount;
+          str = new String(line);
+          str.lineno = rightNum++;
+          run.right.push(str);
           --rightCount;
         }
-        run.right = [].concat(run.left);
         break;
       }
       default: {
         return result;
       }
     }
-    LOG(uneval(run));
     result.runs.push(run);
   }
 
