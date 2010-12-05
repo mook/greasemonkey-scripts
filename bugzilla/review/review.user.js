@@ -33,7 +33,18 @@ function LOG() {
  * Function to start the review, triggered by the user-visible button
  */
 function startReview() {
-  setTimeout(function(){location.href="javascript:editAsComment()"}, 0);
+  setTimeout(function(){
+    location.href="javascript:editAsComment()";
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: location.root + "attachment.cgi?id=" + location.attachmentid,
+      overrideMimeType: "text/plain",
+      onload: function(aResponse) {
+        document.getElementById("editFrame").value =
+          JSON.stringify(PatchReader(aResponse.responseText));
+      }
+    });
+  }, 0);
   document.documentElement.setAttribute("reviewing", true);
 
   var reviewFrame = document.getElementById("reviewFrame");
