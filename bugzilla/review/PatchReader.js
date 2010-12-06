@@ -89,10 +89,10 @@ function PatchReader(aPatchContents) {
  */
 function FileName(aLine) {
   var result = {line: aLine}, match;
-  const RE_TYPE = /^(\-\-\-|\+\+\+) /;
+  const RE_TYPE = /^(\-\-\-|\+\+\+)\s+/;
   const RE_CVS = /^(.*)\t(\d+ [A-Z][a-z]{2} \d+ (?:\d\d:){2}\d\d [+-]\d{4})(?:\t([\d.]+))?$/;
   const RE_HG = /^(?:[ab]\/)?(.*)\t((?:[A-Z][a-z]{2} ){2}\d\d (?:\d\d:){2}\d\d \d+ [+-]\d{4})$/;
-  const RE_SVN = /^(.*?) +\((revision \d+|working copy)\)$/;
+  const RE_SVN = /^(.*?)\s+\((revision \d+|working copy)\)$/;
   if ((match = RE_TYPE(aLine))) {
     result.type = {
       "---": "removed",
